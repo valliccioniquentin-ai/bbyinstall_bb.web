@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Burn — Installer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --border: #1e1e1e;
+    --accent: #e84040;
+    --text: #dddddd;
+    --muted: #444444;
+    --dim: #222222;
+  }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; display:flex; align-items:center; justify-content:center; }
+  .dl-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px 36px; text-align:center; width:320px; }
+  .dl-title { font-size:13px; font-weight:700; color: var(--muted); letter-spacing:3px; margin-bottom:6px; text-transform:uppercase; }
+  .dl-file { font-family: 'Space Mono', monospace; font-size:15px; color: var(--text); margin-bottom:20px; }
+  .dl-file strong { color:#fff; }
+  .progress-wrap { width: 100%; height: 6px; background: var(--dim); border-radius:3px; overflow:hidden; margin-bottom:14px; }
+  .progress-bar { height:100%; width:0%; background: linear-gradient(90deg, var(--accent), #ff8080); border-radius:3px; transition: width 0.2s; }
+  .dl-status { font-family:'Space Mono', monospace; font-size:10px; color: var(--muted); letter-spacing:1px; min-height:16px; }
+  .dl-status.done { color:#5cb85c; }
+</style>
+</head>
+<body>
+<div class="dl-box">
+  <div class="dl-title">Downloading</div>
+  <div class="dl-file"><strong>LatestBurn.zip</strong></div>
+  <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+  <div class="dl-status" id="status">Preparing download...</div>
+</div>
+
+<script>
+async function downloadFile(url, filename) {
+  const status = document.getElementById('status');
+  const progressBar = document.getElementById('progress-bar');
+
+  status.textContent = 'Connecting to server...';
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    status.textContent = 'Download failed!';
+    return;
+  }
+
+  const reader = response.body.getReader();
+  const contentLength = +response.headers.get('Content-Length');
+
+  let receivedLength = 0;
+  let chunks = [];
+
+  while(true) {
+    const {done, value} = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    receivedLength += value.length;
+    const percent = Math.floor((receivedLength / contentLength) * 100);
+    progressBar.style.width = percent + '%';
+    status.textContent = `Downloading... ${percent}%`;
+  }
+
+  // Combiner les chunks
+  let blob = new Blob(chunks);
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  status.textContent = 'Download complete ✓';
+  status.classList.add('done');
+  progressBar.style.width = '100%';
+}
+
+// Lancer le téléchargement au chargement de la page
+window.addEventListener('load', () => {
+  downloadFile('LatestBurn.zip', 'LatestBurn.zip');
+});
+</script>
+</body>
+</html>
