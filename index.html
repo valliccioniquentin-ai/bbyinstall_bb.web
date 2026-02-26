@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Burn — Installer</title>
+<style>
+  body { background:#0a0a0a; color:#ddd; font-family: monospace; display:flex; align-items:center; justify-content:center; height:100vh; }
+  .dl-box { background:#111; padding:30px; border-radius:16px; text-align:center; width:320px; }
+  .progress-wrap { width:100%; height:6px; background:#222; border-radius:3px; margin:14px 0; overflow:hidden; }
+  .progress-bar { width:0%; height:100%; background:linear-gradient(90deg,#e84040,#ff8080); border-radius:3px; transition: width 0.2s; }
+  .dl-status { font-size:10px; min-height:16px; margin-top:4px; color:#888; }
+  .dl-status.done { color:#5cb85c; }
+</style>
+</head>
+<body>
+<div class="dl-box">
+  <div>Downloading <strong>LatestBurn.zip</strong></div>
+  <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+  <div class="dl-status" id="status">Preparing download...</div>
+</div>
+
+<script>
+async function downloadFile(url, filename) {
+  const status = document.getElementById('status');
+  const progressBar = document.getElementById('progress-bar');
+  status.textContent = 'Connecting to server...';
+
+  const response = await fetch(url);
+  if (!response.ok) { status.textContent='Download failed!'; return; }
+
+  const reader = response.body.getReader();
+  const contentLength = +response.headers.get('Content-Length');
+  let receivedLength = 0, chunks = [];
+
+  while(true){
+    const {done,value} = await reader.read();
+    if(done) break;
+    chunks.push(value);
+    receivedLength += value.length;
+    const percent = Math.floor((receivedLength/contentLength)*100);
+    progressBar.style.width = percent+'%';
+    status.textContent = `Downloading... ${percent}%`;
+  }
+
+  const blob = new Blob(chunks);
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  status.textContent='Download complete ✓';
+  status.classList.add('done');
+}
+
+window.addEventListener('load', ()=> downloadFile('LatestBurn.zip','LatestBurn.zip'));
+</script>
+</body>
+</html>
